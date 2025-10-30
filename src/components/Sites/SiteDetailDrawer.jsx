@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import PixelInstallationCode from './PixelInstallationCode';
 
 const SiteDetailDrawer = ({ site, isOpen, onClose }) => {
+  const [showInstallCode, setShowInstallCode] = useState(false);
+
   if (!site) return null;
+
+  // Use environment variable for API endpoint
+  const apiEndpoint = import.meta.env.VITE_API_URL || 'https://pixel.edwinlovett.com/api';
 
   return (
     <>
@@ -28,7 +34,34 @@ const SiteDetailDrawer = ({ site, isOpen, onClose }) => {
             </button>
           </div>
 
-          <div className="space-y-6">
+          {/* Toggle between Details and Installation Code */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setShowInstallCode(false)}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                !showInstallCode
+                  ? 'bg-red-primary text-white'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }`}
+            >
+              Details
+            </button>
+            <button
+              onClick={() => setShowInstallCode(true)}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                showInstallCode
+                  ? 'bg-red-primary text-white'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }`}
+            >
+              Install Code
+            </button>
+          </div>
+
+          {showInstallCode ? (
+            <PixelInstallationCode siteUrl={site.url} apiEndpoint={apiEndpoint} />
+          ) : (
+            <div className="space-y-6">
             <div>
               <h3 className="text-base font-semibold text-white mb-3">Tag Status</h3>
               <div className="space-y-2">
@@ -131,6 +164,7 @@ const SiteDetailDrawer = ({ site, isOpen, onClose }) => {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </>

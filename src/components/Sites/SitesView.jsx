@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import SitesTable from './SitesTable';
 import AddSiteModal from './AddSiteModal';
@@ -10,6 +11,17 @@ const SitesView = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
   const { sites, addSite } = useSites();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-trigger add site modal if addSite query param is present
+  useEffect(() => {
+    if (searchParams.get('addSite') === 'true') {
+      setIsAddModalOpen(true);
+      // Remove the query param to clean up the URL
+      searchParams.delete('addSite');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   return (
     <div>
