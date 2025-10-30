@@ -1,0 +1,163 @@
+# Product Requirements Document (PRD)
+
+**Project:** Pixel & GTM Monitoring System
+**Owner:** Edwin Lovett III
+**Date:** September 2025
+**Version:** 1.0
+
+---
+
+## 1. Overview
+
+The Pixel & Tag Monitoring System is a SaaS-style tool to verify whether tracking pixels (Meta, GA4, GTM, etc.) are still installed and actively firing on client websites.
+It provides both:
+
+* **On-page snippet reporting (heartbeat script)** for real-time “is it firing?” checks.
+* **Crawler service** (headless browser via droplet/serverless) for external validation of tag presence and firing.
+
+The system consolidates results into a **modern dashboard** with traffic-light style indicators and detailed diagnostics.
+
+---
+
+## 2. Goals
+
+* Provide a centralized dashboard where clients/agencies can confirm pixel health across many domains.
+* Alert when a tag is missing, suppressed (consent), or broken.
+* Maintain lightweight, privacy-safe implementation (no PII capture).
+* Deliver clean, modern, glassmorphic UI that reflects premium agency branding.
+
+---
+
+## 3. Key Features
+
+### 3.1 Heartbeat Script
+
+* Deployable via GTM Custom HTML or hard embed.
+* Collects runtime signals:
+
+  * GTM presence (`window.dataLayer`).
+  * GA4 presence + confirmation of network request (`/collect`).
+  * Meta Pixel presence + network call to `facebook.com/tr`.
+  * Consent state (if available).
+* Sends beacon to monitoring API every N seconds (configurable).
+
+### 3.2 Off-Site Crawler
+
+* Scheduled via droplet or serverless (Playwright/Puppeteer).
+* Loads client URLs, waits for network idle, captures GTM/GA/Meta requests.
+* Simulates acceptance of cookie banners (consent test).
+* Pushes results to DB.
+
+### 3.3 Dashboard (Web App)
+
+* Authentication (Supabase Auth).
+* Table view of sites with real-time status.
+* Drill-down per site for details:
+
+  * Last heartbeat timestamp.
+  * Detected container IDs (GTM-XXXX, G-XXXX, Meta Pixel ID).
+  * Network evidence (recent hits).
+  * Consent state over time.
+
+### 3.4 Alerts
+
+* Email or Slack/Webhook if pixel status changes from **green → red**.
+* Threshold: no signals for X minutes/hours.
+
+---
+
+## 4. Dashboard Design Notes (Supabase / Facebook / Modern Style)
+
+### 4.1 Layout
+
+* **Header:** Fixed, glassmorphic (blurred background, semi-transparent ash #1C1C1E).
+
+  * Logo left, “Pixel Monitor” title.
+  * Right side: profile dropdown (avatar, settings, logout).
+
+* **Sidebar Navigation (left):**
+
+  * Glassmorphic panel with ash gradient (#1C1C1E → #2A2A2D).
+  * Icons only (lucide-react style), tooltips on hover.
+  * Sections: Dashboard, Sites, Alerts, Settings.
+  * Active item: subtle red glow underline (#CF0E0F).
+
+* **Main Table Area (center):**
+
+  * Large responsive table:
+
+    * **Columns:** Site, GTM, GA4, Meta, Consent, Last Seen, Notes.
+    * **Status dots:**
+
+      * Green = confirmed firing.
+      * Red = missing.
+      * Amber = present but blocked/suppressed (consent).
+    * Hover tooltips: show last evidence (“GA4 hit seen at 3:12 PM”).
+  * Glassmorphic card container with rounded 2xl, soft shadow.
+
+* **Detail Drawer (right):**
+
+  * Slides in when row clicked.
+  * Shows expanded metrics: network hits, container IDs, recent heartbeat logs, consent states.
+  * Background: frosted glass effect.
+
+### 4.2 Colors
+
+* **Background:** Ash dark gradient (#121212 → #1E1E1E).
+* **Primary Accent:** Bold red (#CF0E0F).
+* **Secondary Accent:** Neutral gray (#888888).
+* **Cards/Containers:** Semi-transparent with blur, white text over dark.
+
+### 4.3 Typography
+
+* Typeface: **Inter** (clean, modern).
+* Headers: Bold, white.
+* Body: Medium, light gray (#CCCCCC).
+* Tooltips/hints: Smaller, muted gray (#999999).
+
+### 4.4 Interactions
+
+* Smooth fade/slide animations (Framer Motion style).
+* Status dots animate with subtle pulse when data updates.
+* Alerts in header (bell icon with red badge).
+
+---
+
+## 5. Technical Architecture
+
+### 5.1 Frontend
+
+* React + Vite.
+* TailwindCSS + glassmorphism utilities.
+* Supabase (Auth + Postgres + Realtime subscriptions).
+
+### 5.2 Backend
+
+* Supabase/Postgres for storing results.
+* Node/Express API or Supabase Edge Functions for ingesting beacons & crawler logs.
+* Scheduler (cron/droplet) for Playwright runs.
+
+### 5.3 Infrastructure
+
+* Droplet (DigitalOcean) for crawler.
+* Supabase hosting for app + DB.
+* Optional: Cloudflare Worker proxy for beacon ingestion.
+
+---
+
+## 6. Roadblocks & Risks
+
+* **Consent Mode false negatives** → must handle gracefully (amber status).
+* **Server-side tagging** → may show as missing client hits, even if tracking is fine. Provide disclaimer.
+* **Ad blockers** → crawler should run in clean profile.
+* **Performance** → avoid heavy scripts on client sites (snippet < 5kb).
+* **Legal** → only monitor domains with explicit permission.
+
+---
+
+## 7. Success Metrics
+
+* Dashboard uptime ≥ 99%.
+* Client snippet payload < 5kb.
+* Status refresh latency < 60 seconds.
+* Detection accuracy ≥ 95% for GTM/GA4/Meta tags.
